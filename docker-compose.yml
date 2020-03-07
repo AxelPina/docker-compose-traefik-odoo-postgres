@@ -1,38 +1,113 @@
 version: "3"
 services:
-  odoo:
+  odoo1:
     image: odoo:12.0
     depends_on:
-      - db
+      - db1
     restart: unless-stopped
     networks:
       - internal
     environment:
-      - HOST=db
-      - USER=${ODOO_USER}
-      - PASSWORD=${ODOO_PASS}
+      - HOST=db1
+      - USER=${ODOO_USER_ODOO1}
+      - PASSWORD=${ODOO_PASS_ODOO1}
+      - ./odoo1/odoo1-web-data:/var/lib/odoo1
+      - ./odoo1/addons:/mnt/extra-addons
+      - ./odoo1/logs:/var/log/odoo1
     volumes:
-      - ./odoo/odoo-web-data:/var/lib/odoo
-      - ./odoo/config:/etc/odoo
-      - ./odoo/addons:/mnt/extra-addons
-      - ./odoo/logs:/var/log/odoo
+      - ./odoo1/odoo1-web-data:/var/lib/odoo1
+      - ./odoo1/config:/etc/odoo1
+      - ./odoo1/addons:/mnt/extra-addons
+      - ./odoo1/logs:/var/log/odoo1
     labels:
-      - 'traefik.http.routers.odoo.rule=Host(`${ODOO_TRAEFIK_URL}`)'
-      - 'traefik.http.routers.odoo.entrypoints=websecure'
-      - 'traefik.http.routers.odoo.tls.certresolver=odoo'
+      - 'traefik.http.routers.odoo1.rule=Host(`${ODOO_TRAEFIK_URL_ODOO1}`)'
+      - 'traefik.http.routers.odoo1.entrypoints=websecure'
+      - 'traefik.http.routers.odoo1.tls.certresolver=odoo1'
       - 'traefik.port=8069'
-  db:
+  db1:
     image: postgres:10
     restart: unless-stopped
     networks:
       - internal
     environment:
       - POSTGRES_DB=postgres
-      - POSTGRES_USER=${ODOO_USER}
-      - POSTGRES_PASSWORD=${ODOO_PASS}
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=${ODOO_USER_ODOO1}
+      - POSTGRES_PASSWORD=${ODOO_PASS_ODOO1}
+      - PGDATA=/var/lib/postgresql/data/pgdata_odoo1
     volumes:
-      - ./pgdata:/var/lib/postgresql/data/pgdata
+      - ./pgdata_odoo1:/var/lib/postgresql/data/pgdata_odoo1
+  odoo2:
+    image: odoo:12.0
+    depends_on:
+      - db2
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - HOST=db2
+      - USER=${ODOO_USER_ODOO2}
+      - PASSWORD=${ODOO_PASS_ODOO2}
+      - ./odoo2/odoo2-web-data:/var/lib/odoo2
+      - ./odoo2/addons:/mnt/extra-addons
+      - ./odoo2/logs:/var/log/odoo2
+    volumes:
+      - ./odoo2/odoo2-web-data:/var/lib/odoo2
+      - ./odoo2/config:/etc/odoo2
+      - ./odoo2/addons:/mnt/extra-addons
+      - ./odoo2/logs:/var/log/odoo2
+    labels:
+      - 'traefik.http.routers.odoo2.rule=Host(`${ODOO_TRAEFIK_URL_ODOO2}`)'
+      - 'traefik.http.routers.odoo2.entrypoints=websecure'
+      - 'traefik.http.routers.odoo2.tls.certresolver=odoo2'
+      - 'traefik.port=8069'
+  db2:
+    image: postgres:10
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${ODOO_USER_ODOO2}
+      - POSTGRES_PASSWORD=${ODOO_PASS_ODOO2}
+      - PGDATA=/var/lib/postgresql/data/pgdata_odoo2
+    volumes:
+      - ./pgdata_odoo2:/var/lib/postgresql/data/pgdata_odoo2
+  odoo3:
+    image: odoo:12.0
+    depends_on:
+      - db3
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - HOST=db3
+      - USER=${ODOO_USER_ODOO3}
+      - PASSWORD=${ODOO_PASS_ODOO3}
+      - ./odoo3/odoo3-web-data:/var/lib/odoo3
+      - ./odoo3/addons:/mnt/extra-addons
+      - ./odoo3/logs:/var/log/odoo
+    volumes:
+      - ./odoo3/odoo3-web-data:/var/lib/odoo3
+      - ./odoo3/config:/etc/odoo3
+      - ./odoo3/addons:/mnt/extra-addons
+      - ./odoo3/logs:/var/log/odoo3
+    labels:
+      - 'traefik.http.routers.odoo3.rule=Host(`${ODOO_TRAEFIK_URL_ODOO3}`)'
+      - 'traefik.http.routers.odoo3.entrypoints=websecure'
+      - 'traefik.http.routers.odoo3.tls.certresolver=odoo3'
+      - 'traefik.port=8069'
+  db3:
+    image: postgres:10
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=${ODOO_USER_ODOO3}
+      - POSTGRES_PASSWORD=${ODOO_PASS_ODOO3}
+      - PGDATA=/var/lib/postgresql/data/pgdata_odoo3
+    volumes:
+      - ./pgdata_odoo3:/var/lib/postgresql/data/pgdata_odoo3
   traefik:
     image: traefik:v2.0
     networks:
@@ -42,28 +117,36 @@ services:
       # The HTTP port
       - "80:80"
       - "443:443"
-      # The Web UI (enabled by --api.insecure=true)
+      # The Web UI (enabled by --api.insecure=false)
       - "8080:8080"
     volumes:
       - "./traefik/letsencrypt:/letsencrypt"
       - "./traefik/traefik.yml:/etc/traefik.yml"
       - "/var/run/docker.sock:/var/run/docker.sock"
-     labels:
+    labels:
       - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
       - "traefik.http.routers.http-catchall.entrypoints=web"
       - "traefik.http.routers.http-catchall.middlewares=redirect-to-https@docker"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
     command:
      - "--log.level=DEBUG"
-     - "--api.insecure=true"
+     - "--api.insecure=false"
      - "--providers.docker"
      - "--providers.docker.defaultRule=Host(`{{ trimPrefix `/` .Name }}.${TRAEFIK_DEFAULT_DOMAIN}`)"
      - "--entryPoints.web.address=:80"
      - "--entryPoints.websecure.address=:443"
-     - "--certificatesResolvers.odoo.acme.httpchallenge=true"
-     - "--certificatesresolvers.odoo.acme.httpchallenge.entrypoint=web"
-     - "--certificatesresolvers.odoo.acme.email=${ACME_EMAIL}"
-     - "--certificatesresolvers.odoo.acme.storage=/letsencrypt/acme.json"
+     - "--certificatesResolvers.odoo1.acme.httpchallenge=true"
+     - "--certificatesresolvers.odoo1.acme.httpchallenge.entrypoint=web"
+     - "--certificatesresolvers.odoo1.acme.email=${ACME_EMAIL}"
+     - "--certificatesresolvers.odoo1.acme.storage=/letsencrypt/acme.json"
+     - "--certificatesResolvers.odoo2.acme.httpchallenge=true"
+     - "--certificatesresolvers.odoo2.acme.httpchallenge.entrypoint=web"
+     - "--certificatesresolvers.odoo2.acme.email=${ACME_EMAIL}"
+     - "--certificatesresolvers.odoo2.acme.storage=/letsencrypt/acme.json"
+     - "--certificatesResolvers.odoo3.acme.httpchallenge=true"
+     - "--certificatesresolvers.odoo3.acme.httpchallenge.entrypoint=web"
+     - "--certificatesresolvers.odoo3.acme.email=${ACME_EMAIL}"
+     - "--certificatesresolvers.odoo3.acme.storage=/letsencrypt/acme.json"
 
 networks:
   internal:
