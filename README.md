@@ -1,3 +1,8 @@
+# UPDATE Nov. 21st 2020
+
+If you're looking to deploy Odoo  with Postgres + Traefik for production environment please consider ![Dockerdoo](https://github.com/AxelPina/dockerdoo).
+It meets the same goal as this repository but more efficient.
+
 # Odoo + Postgresql + Traefik
 
 This repository helps set up Odoo 12 + Postgresql 10 served by Traefik 2.0 over HTTPS (Let's Encrypt)
